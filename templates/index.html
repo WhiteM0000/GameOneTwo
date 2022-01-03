@@ -5,5 +5,61 @@
 {% endblock %}
 
 {% block body %}
-Основная страница сайта
+
+<div class="container">
+    <div class="pricing-header p-3 pb-md-4 mx-auto text-center">
+      <h1 class="display-4 fw-normal">Простые игрушки</h1>
+      <p class="fs-5 text-muted">Браузерные игрушки на движке Phaser: "Кодить легко, играть не напряжно!"</p>
+    </div>
+
+  <main>
+    <div class="row row-cols-1 row-cols-md-3 mb-3 text-center">
+      <div class="col">
+        <div class="card mb-4 rounded-3 shadow-sm border-primary">
+          <div class="card-header py-3 text-white bg-primary border-primary">
+            <h4 class="my-0 fw-normal">Гоняем мяч в одиночку...</h4>
+          </div>
+          <div class="card-body">
+            <h1 class="card-title pricing-card-title">Теннис без Шараповой</h1>
+            <ul class="list-unstyled mt-3 mb-4">
+              <li>Кружок и прямоугольник!</li>
+              <li>Гениально!</li>
+            </ul>
+            <a href="/game" class="w-100 btn btn-lg btn-primary">Играть</a>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card mb-4 rounded-3 shadow-sm">
+          <div class="card-header py-3">
+            <h4 class="my-0 fw-normal">Анонс №1</h4>
+          </div>
+          <div class="card-body">
+            <h1 class="card-title pricing-card-title">Ожидается Шарапова!</h1>
+            <ul class="list-unstyled mt-3 mb-4">
+              <li>Дата прибытия уточняется!</li>
+              <li>Все в нетерпении!</li>
+            </ul>
+            <a href="/game_two" class="w-100 btn btn-lg btn-outline-primary">Новости разработки</a>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card mb-4 rounded-3 shadow-sm">
+          <div class="card-header py-3">
+             <h4 class="my-0 fw-normal">Анонс №2</h4>
+          </div>
+          <div class="card-body">
+            <h1 class="card-title pricing-card-title">Шарапова будет уволена!</h1>
+            <ul class="list-unstyled mt-3 mb-4">
+              <li>Инсайдеры не дремлют!</li>
+              <li>Народ волнуется!</li>
+            </ul>
+            <a href="/game_three" class="w-100 btn btn-lg btn-outline-primary">Новости разработки</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
 {% endblock %}

@@ -5,10 +5,28 @@
     <meta name="viewport"
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
     <title>{% block title %}{% endblock %}</title>
 </head>
 <body>
-  {% block body %}{% endblock %}
+    <div class="container d-flex flex-column flex-md-row align-items-center pb-3 mb-4 border-bottom">
+      <a href="/" class="d-flex align-items-center text-dark text-decoration-none">
+        <span class="fs-4">Простые игры на Phaser</span>
+      </a>
+      <nav class="d-inline-flex mt-2 mt-md-0 ms-md-auto">
+        <a class="me-3 py-2 text-dark text-decoration-none" href="/">Главная</a>
+        <a class="me-3 py-2 text-dark text-decoration-none" href="/about">А смысл?</a>
+        <a class="me-3 py-2 text-dark text-decoration-none" href="/posts">Почитать на заборе</a>
+      </nav>
+        <a class="btn btn-warning" href="/create-article">Написать на заборе</a>
+    </div>
+    {% block body %}{% endblock %}
+
+  <footer class="container pt-4 my-md-5 pt-md-5 border-top">
+    <div class="col-12 col-md">
+      <small class="d-block mb-3 text-muted">WhiteM© 2022</small>
+    </div>
+  </footer>
 </body>
 </html>
