@@ -1,11 +1,17 @@
 from flask import Flask, render_template, url_for, request, redirect
 from flask_sqlalchemy import SQLAlchemy
+from flask_socketio import SocketIO, emit
 from datetime import datetime
+import game_two_server as server2
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATION'] = False
 db = SQLAlchemy(app)
+app.config['SECRET_KEY'] = 'secret!'
+socketio = SocketIO(app)
+
 
 
 class Article(db.Model):
@@ -65,12 +71,21 @@ def about():
 
 @app.route('/game_two')
 def game_two():
-    return render_template("game_two.html")
+    return render_template("game_twooo.html")
 
 
-@app.route('/game_three')
-def game_three():
-    return render_template("game_three.html")
+@app.route('/game_two/server/', methods=['POST'])
+def game_two_server():
+    content_type = request.headers.get('Content-Type')
+    if content_type == 'application/json':
+        return server2.get_answer(request)
+    else:
+        return 'Content-Type is not supported'
+
+
+@app.route('/game_tree')
+def game_tree():
+    return render_template("game_tree.html")
 
 
 @app.route('/posts')
@@ -100,6 +115,30 @@ def post_delete(id):
 def game():
     return render_template("game.html")
 
+
+@socketio.on('connect', namespace='/test')
+def test_connect():
+    emit('my response', {'data': 'Connected'})
+
+
+@socketio.on('disconnect', namespace='/test')
+def test_disconnect():
+    print('Client disconnected')
+
+
+@socketio.on('my_event')
+def handle_my_custom_event(json):
+    emit('my_response', json)
+    print(json)
+
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    # app.run(debug=True)
+    # socketio.run(app, host='0.0.0.0', debug=True)
+    socketio.run(app)
+    # site = Thread(target=app.run, args=())
+    # site.start()
+    # game_three_server = Thread(target=server_program, args=())
+    # game_three_server = Thread(target=S_three.server_program, args=())
+    # game_three_server.start()
 
