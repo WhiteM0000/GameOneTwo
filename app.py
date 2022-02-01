@@ -13,7 +13,6 @@ app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
 
-
 class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
@@ -133,9 +132,9 @@ def handle_my_custom_event(json):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # app.run(debug=True)
     # socketio.run(app, host='0.0.0.0', debug=True)
-    # socketio.run(app)
+    socketio.run(app, debug=True)
     # site = Thread(target=app.run, args=())
     # site.start()
     # game_three_server = Thread(target=server_program, args=())
