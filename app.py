@@ -1,9 +1,9 @@
-from flask import Flask, render_template, url_for, request, redirect
+from flask import Flask, render_template, url_for, request, redirect, session
 from flask_sqlalchemy import SQLAlchemy
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO, emit, send, join_room
 from datetime import datetime
+import server_nardy as nardy
 import game_two_server as server2
-
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
@@ -11,7 +11,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATION'] = False
 db = SQLAlchemy(app)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
-
 
 
 class Article(db.Model):
@@ -83,8 +82,15 @@ def game_two_server():
         return 'Content-Type is not supported'
 
 
+uid = 100
+
+
 @app.route('/game_tree')
 def game_tree():
+    global uid
+    session['uid'] = uid
+    uid += 1
+    print(session)
     return render_template("game_tree.html")
 
 
@@ -116,20 +122,44 @@ def game():
     return render_template("game.html")
 
 
-@socketio.on('connect', namespace='/test')
+@socketio.on('connect')
 def test_connect():
     emit('my response', {'data': 'Connected'})
+    print('Есть подключение!')
 
 
-@socketio.on('disconnect', namespace='/test')
+@socketio.on('disconnect')
 def test_disconnect():
     print('Client disconnected')
 
 
 @socketio.on('my_event')
 def handle_my_custom_event(json):
-    emit('my_response', json)
+    emit('server_message', json)
     print(json)
+
+
+@socketio.on('nardy_stage')
+def handle_my_custom_event(json):
+    print(session)
+    if session['uid'] < 102:
+        emit('server_response', nardy.event(session, json), include_self=False, to='testroom')
+    else:
+        emit('server_busy', json)
+
+
+@socketio.on('join')
+def on_join(data):
+    room = data['room']
+    join_room(room)
+    print(str(session['uid']) + ' has entered the room. ' + room)
+    json = {'stage_mode': 'connect'}
+    if session['uid'] > 101:
+        emit('server_busy', json)
+    else:
+        emit('server_response', nardy.event(session, json), to='testroom')
+
+
 
 
 if __name__ == '__main__':
@@ -141,4 +171,3 @@ if __name__ == '__main__':
     # game_three_server = Thread(target=server_program, args=())
     # game_three_server = Thread(target=S_three.server_program, args=())
     # game_three_server.start()
-

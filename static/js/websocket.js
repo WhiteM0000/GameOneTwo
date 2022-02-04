@@ -1,26 +1,21 @@
-//var socket = new WebSocket("ws://10.0.0.5:5000/");
+var socket = io.connect('http://127.0.0.1:5000/');
 
-/*
-socket.onopen = function() {
-  alert("Соединение установлено.");
-};
+socket.on('connect', function() {
+    socket.emit('my_event', {data: 'I\'m connected!'});
+    console.log('**** Сокет соединение установлено!');
+});
 
-socket.onclose = function(event) {
-  if (event.wasClean) {
-    alert('Соединение закрыто чисто');
-  } else {
-    alert('Обрыв соединения'); // например, "убит" процесс сервера
-  }
-  alert('Код: ' + event.code + ' причина: ' + event.reason);
-};
+socket.on('disconnect', function() {
+    console.log('**** Сокет соединение закрыто!');
+});
 
-socket.onmessage = function(event) {
-  alert("Получены данные " + event.data);
-};
+socket.on('server_busy', function(msg) {
+    console.log('**** Сервер занят ******');
+});
 
-socket.onerror = function(error) {
-  alert("Ошибка " + error.message);
-};
-*/
+socket.on('server_response', function(msg) {
+    console.log('**** Сокет соединение: "server_response" ' + msg);
+    console.log(msg);
+    serverReact(msg);//реакция на сообщение сервера, определена в файле nardy.js
+});
 
-//socket.send("Привет");

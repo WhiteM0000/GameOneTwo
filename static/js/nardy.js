@@ -44,7 +44,7 @@
 		        update: update}
 	};
 	var game = new Phaser.Game(config);
-
+    var game_self;
 
 //----------------------------------------------------------------------------------------------------------------------
 //                                              СТАНДАРТНЫЕ ФУНКЦИИ
@@ -59,6 +59,7 @@
 	    this.load.spritesheet('dice', settings.dir_assets + settings.dice.img_filename, settings.dice.frames);
 	    this.load.spritesheet('diceS', settings.dir_assets + settings.diceS.img_filename, settings.diceS.frames);
 	    this.load.spritesheet('cap', settings.dir_assets + settings.cap.img_filename, settings.cap.frames);
+
 	}
 
 
@@ -101,6 +102,7 @@
         this.moveChips = [];//выставляется в функции броска фишек
 
         //Режим игры
+        game_self = this;
         this.stage_mode = 'begin';
         stageControl(this);
 	}
@@ -115,7 +117,6 @@
         }
         */
         chipDraw(this);//перемещение фишки
-
 	}
 
 
@@ -138,7 +139,12 @@
     console.log('СРАБОТАЛА...stageControl');
     console.log('НА ВХОДЕ: self.stage_mode='+self.stage_mode);
         switch(self.stage_mode){
-            case 'begin': self.stage_mode = 'priority';
+            case 'begin':
+                self.stage_mode = 'connect';
+                break;
+
+            case 'connect':
+                self.stage_mode = 'priority';
                 activateCapP(self, true);
                 self.white_first_step = true;
                 self.black_first_step = true;
@@ -147,21 +153,25 @@
             case 'priority': self.stage_mode = 'priority_waiting';
                 self.player_dice_num = self.dice.number;
                 console.log('Игрок выбросил (player_dice_num)=' + self.player_dice_num);
+                console.log('Ждем броска противника...');
+                activateCapP(self, false);
                 break;
 
             case 'priority_waiting':
                 self.enemy_dice_num = self.diceS.number;
                 console.log('Противник выбросил (enemy_dice_num)=' + self.enemy_dice_num);
+                activateCapP(self, true);
                 if(self.enemy_dice_num == self.player_dice_num) self.stage_mode = 'priority';
                 else{
                     if(self.enemy_dice_num > self.player_dice_num){
-                        self.stage_mode = 'white_dice';//'black_next';
+                        self.stage_mode = 'black_dice';
                         self.player_color = 'black';
-                        //activateCap(self, false);
+                        activateCapP(self, false);
                    }
                     else{
                         self.stage_mode = 'white_dice';
                         self.player_color = 'white';
+
                     }
                     chipsCreate(self);
                 }
@@ -177,17 +187,164 @@
                 self.stack_steps = [];//сбросить стек сделанных ходов...
                 self.white_had_num = 0;//сбросить счетчик взятых фишек с головы
                 for(i in self.player_steps_array) console.log(self.player_steps_array[i]);
-            //canSteps(self);
                 break;
 
-            case 'white_next':
-                self.stage_mode = 'white_dice';
+            case 'white_next'://игрок перемещает фишки
+                self.stage_mode = 'black_dice';
                 activateButtonEscStep(self, false, false);
                 activateButtonEndStep(self, false, false);
+                break;
+
+            case 'black_dice'://противник бросает кубики
+                self.stage_mode = 'black_next';
+                break;
+
+            case 'black_next'://противник перемещает фишки
+                self.stage_mode = 'white_dice';
                 setTimeout(function(){activateCapP(self, true);}, 500);
                 break;
         }
+        sendServerMessage(self);
         console.log('НА ВЫХОДЕ Стадия (stage_mode)=' + self.stage_mode);
+    }
+//----------------------------------------------------------------------------------------------------------------------
+    //ПОЛУЧЕНО СООБЩЕНИЕ О СОБЫТИИ НА СЕРВЕРЕ, ОБРАБОТКА (ВЫЗЫВАЕТСЯ СОБЫТИЕМ 'server_response', ОБРАБОТЧИК В ФАЙЛЕ 'websocket.js')
+    function serverReact(msg){
+        console.log('<serverReact1> game.stage_mode = ' + game_self.stage_mode);
+        console.log('<serverReact2> msg.stage_mode = ' + msg.stage_mode);
+        console.log(msg);
+        if(msg.stage_mode == game_self.stage_mode){
+            switch(game_self.stage_mode){
+
+                case 'connect':
+                    stageControl(game_self);
+                    break;
+                case 'priority_waiting':
+                    game_self.diceS.number = msg.dice;
+                    diceRoll(game_self, false, false);
+                    break;
+                /*
+                case 'black_dice'://противник бросил кубики
+                    game_self.diceS.number = msg.diceS;
+                    game_self.dice.number = msg.dice;
+                    diceRoll(game_self, false, true);
+                    break;
+
+                case 'black_next'://противник сделал ход
+                    blacksGon(msg);
+                    break;
+                */
+            }
+        }
+        else{
+            console.log('<serverReact3> стадии не совпадают!');
+            let err = false;//наличие ошибок
+            switch(msg.stage_mode){
+                case 'priority_waiting':
+                    if(game_self.stage_mode == 'priority'){
+                        game_self.diceS.number = msg.dice;
+                        diceRoll(game_self, false, false);
+                    }
+                    break;
+                case 'priority':
+                    if(game_self.stage_mode == 'priority_waiting'){
+                        game_self.stage_mode = 'priority'
+                        activateCapP(game_self, true);
+                    }
+                    break;
+                case 'black_dice':
+                    if(game_self.stage_mode == 'priority_waiting'){
+                        game_self.player_color = 'white';
+                        chipsCreate(game_self);
+                    }
+                    if(game_self.stage_mode == 'black_next'){
+                        if(!blacksGon(msg)) err = true;//проверка расположения своих фишек
+                    }
+                    if(!err){
+                        game_self.stage_mode = 'white_dice';
+                        activateCapP(game_self, true);
+                    }
+                    else console.log('<serverReact101> ОШИБКА расположения своих фишек!');
+                    break;
+                case 'white_dice':
+                    if(game_self.stage_mode == 'priority_waiting'){
+                        game_self.player_color = 'black';
+                        chipsCreate(game_self);
+                    }
+                    game_self.stage_mode = 'black_dice';
+                    break;
+                case 'white_next':
+                    game_self.stage_mode = 'black_dice';
+                    game_self.diceS.number = msg.diceS;
+                    game_self.dice.number = msg.dice;
+                    diceRoll(game_self, false, true);
+                    break;
+            }
+        }
+    }
+//----------------------------------------------------------------------------------------------------------------------
+    //ЗАФИКСИРОВАТЬ ХОД ПРОТИВНИКА НА ИГРОВОМ ПОЛЕ
+    function blacksGon(msg){
+        let ret = true;//ошибка, если расположение своих фишек не совпадает
+        //Преобразование поля, полученного от противника в свое...
+        field_en = [];
+        let ile = 12;//счетчик линий на поле противника
+        for(let il=0;il<24;il++){
+            let black_num = msg.field[ile].white;
+            let white_num = msg.field[ile].black;
+            field_en.push({black: black_num, white: white_num})
+            ile++; if(ile > 23) ile = 0;
+        }
+        console.log('<blacksGon> field_en=');
+        console.log(field_en);
+
+        //Получить номера фишек, которые переместили...
+        let moveChips =[];
+        for(let il=0;il<24;il++){
+            if(game_self.dec.line[il].white != field_en[il].white) ret = false;
+            let redraw_line = false;
+            if(game_self.dec.line[il].black > 0){
+                while(field_en[il].black < game_self.dec.line[il].black){
+                    redraw_line = true;
+                    moveChips.push(game_self.dec.line[il].arrow_ids.pop());
+                    game_self.dec.line[il].black--;
+                }
+            }
+            if(redraw_line) lineDraw(game_self, il);
+        }
+
+        //Переместить фишки на линии...
+        for(let il=0;il<24;il++){
+            let redraw_line = false;
+            while(field_en[il].black > game_self.dec.line[il].black){
+                game_self.dec.line[il].black++;
+                let chip_id = moveChips.pop();
+                game_self.dec.line[il].arrow_ids.push(chip_id);
+                game_self.chipB[chip_id - 16].lineIndex = il;
+                game_self.chipB[chip_id - 16].depth = game_self.dec.line[il].black + game_self.dec.line[il].white;
+                redraw_line = true;
+            }
+            if(redraw_line) lineDraw(game_self, il);
+        }
+        stageControl(game_self);
+        return ret;
+    }
+//----------------------------------------------------------------------------------------------------------------------
+    //ОТПРАВКА СООБЩЕНИЯ СЕРВЕРУ (ПЕРЕМЕННАЯ socket И ФУНКЦИИ ОПРЕДЕЛЕНЫ В ФАЙЛЕ 'websocket.js')
+    function sendServerMessage(self){
+        if(self.stage_mode == 'connect'){socket.emit('join', {room: 'testroom'});}
+        else{
+            //состояние игры (позиции фишек игрока и т.д)...
+            let chipsW = [];
+            if(self.chipW){for(var i = 0; i < 15; i++) chipsW.push(self.chipW[i].lineIndex);}
+            let field = fieldCopy(self);
+            let nardy_stage = { stage_mode: self.stage_mode,
+                                dice: self.dice.number,
+                                diceS: self.diceS.number,
+                                chipsW: chipsW,
+                                field: field};
+            socket.emit('nardy_stage', nardy_stage);
+        }
     }
 //----------------------------------------------------------------------------------------------------------------------
     function fullStepsArray(self){
@@ -381,8 +538,8 @@
         }
     }
 //----------------------------------------------------------------------------------------------------------------------
-    function chipsCreate(self){
     //СОЗДАНИЕ ФИШЕК
+    function chipsCreate(self){
         self.chipW = [];
         self.chipB = [];
         for(var i=0; i<15; i++){
@@ -410,13 +567,13 @@
             self.chipB[i].handControl = false;
         }
         chipStand(self);//расставить фишки
+        console.log('<chipsCreate>');
         self.input.on('gameobjectdown', function (pointer, gameObject) {if(this.stage_mode == 'white_next' && gameObject.name == "chipW"){chipTouch(self, gameObject)}},self);
         self.input.on('gameobjectup', function (pointer, gameObject) {if(gameObject.name == "chipW"){chipFree(self, gameObject)}},self);
      }
-
 //----------------------------------------------------------------------------------------------------------------------
-    function chipTouch(self, gameObject){
     //ИГРОК БЕРЕТ ФИШКУ
+    function chipTouch(self, gameObject){
         //Определить последняя-ли это фишка на линии
         var chips_line_num = self.dec.line[gameObject.lineIndex].white + self.dec.line[gameObject.lineIndex].black;
         var can_touch = true;
@@ -454,7 +611,6 @@
             gameObject.depth = 16;
         }
     }
-
 //----------------------------------------------------------------------------------------------------------------------
     //ИГРОК ОТПУСКАЕТ ФИШКУ
     function chipFree(self, gameObject){
@@ -620,6 +776,8 @@
                 this.diceS.setVisible(false);
                 this.dice.setVisible(false);
             }
+            game_self.diceS.number = false;
+            game_self.dice.number = false;
             this.cap.anims.play('cap_sheik', true);
         }
     }
@@ -643,6 +801,8 @@
         var vx = 0;
         var dvx = dx * 2;
         var vy = self.dec.view.height * 0.35;
+        self.diceS.enemy = !player;//определяет кем этот кубик брошен
+        self.dice.enemy = !player;//определяет кем этот кубик брошен
         if(player){
             x = self.dec.x + self.dec.view.width * 0.75;
             y = self.dec.y + self.dec.view.height * 0.82;
@@ -729,7 +889,8 @@
 //----------------------------------------------------------------------------------------------------------------------
     function stopMoveDiceFirst(self){
         //НАЧАЛО АНИМАЦИИ И ОПРЕДЕЛЕНИЕ СЛУЧАЙНОГО ЗНАЧЕНИЯ ПЕРВОГО КУБИКА
-        this.dice.number = getRandomInt(1, 6);
+        if(this.dice.enemy) this.dice.number = game_self.dice.number;
+        else this.dice.number = getRandomInt(1, 6);
         switch(this.dice.number){
             case 1: this.dice.anims.play('dice_down1', true); break;
             case 2: this.dice.anims.play('dice_down2', true); break;
@@ -754,7 +915,8 @@
 //----------------------------------------------------------------------------------------------------------------------
     function stopMoveDiceSecond(self){
         //НАЧАЛО АНИМАЦИИ И ОПРЕДЕЛЕНИЕ СЛУЧАЙНОГО ЗНАЧЕНИЯ ВТОРОГО КУБИКА
-        this.diceS.number = 2;//getRandomInt(1, 6);
+        if(this.diceS.enemy) this.diceS.number = game_self.diceS.number;
+        else this.diceS.number = getRandomInt(1, 6);
         switch(this.diceS.number){
             case 1: this.diceS.anims.play('diceS_down1', true); break;
             case 2: this.diceS.anims.play('diceS_down2', true); break;
