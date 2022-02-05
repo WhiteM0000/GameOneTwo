@@ -1,4 +1,5 @@
-var socket = io.connect('http://127.0.0.1:5000/');
+//var socket = io.connect('http://127.0.0.1:5000/');
+var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
 
 socket.on('connect', function() {
     socket.emit('my_event', {data: 'I\'m connected!'});

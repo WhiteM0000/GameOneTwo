@@ -165,7 +165,7 @@ def on_join(data):
 if __name__ == '__main__':
     # app.run(debug=True)
     # socketio.run(app, host='0.0.0.0', debug=True)
-    socketio.run(app) # , debug=True)
+    socketio.run(app) #, debug=False)
     # site = Thread(target=app.run, args=())
     # site.start()
     # game_three_server = Thread(target=server_program, args=())
