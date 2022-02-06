@@ -1,18 +1,17 @@
 {% extends 'base.html' %}
 
 {% block title %}
-Страница про нас
+Организовать игру в нарды
 {% endblock %}
 
 {% block body %}
     <div class="container">
         <div class="pricing-header p-3 pb-md-4 mx-auto text-center">
-            <h1 class="display-4 fw-normal">Анонс №2</h1>
-            <p class="fs-5 text-muted">Шарапова будет уволена!</p>
+            <h1 class="display-4 fw-normal">Выбрать вариант</h1>
         </div>
         <div class="pricing-header p-3 pb-md-4 mx-auto text-left">
-            <p class="fs-5 text-muted">Суперсекретная разработка. Прямо из подвала ЦНИИ "Точмашстаколитракетпрома". Инсайдеры говорят, что вообще без Шараповой! И без мячика!</p>
-            <p class="fs-5 text-muted">03.01.2022 в ближайшее время что-то планируется.</p>
+            <a href="/nardy_create" class="w-100 btn btn-lg btn-outline-primary">Создать игру</a>
+            <a href="/nardy_came" class="w-100 btn btn-lg btn-outline-primary">Создать игру</a>
         </div>
     </div>
 {% endblock %}

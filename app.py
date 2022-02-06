@@ -1,13 +1,15 @@
 from flask import Flask, render_template, url_for, request, redirect, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO, emit, send, join_room
-from datetime import datetime
+from datetime import datetime, timedelta
 import server_nardy as nardy
 import game_two_server as server2
+import json
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATION'] = False
+app.permanent_session_lifetime = timedelta(minutes=10)
 db = SQLAlchemy(app)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
@@ -82,16 +84,41 @@ def game_two_server():
         return 'Content-Type is not supported'
 
 
-uid = 100
-
-
-@app.route('/game_tree')
+@app.route('/game_three')
 def game_tree():
-    global uid
-    session['uid'] = uid
-    uid += 1
+    session.permanent = True
+    if 'uid' not in session:
+        session['uid'] = nardy.new_gamer()
+    uid = session['uid']
+    url = url_for('game_tree', _external=True)
+    if nardy.new_room(uid):
+        copy_url = f'Отправьте другу ссылку-приглашение: {url}/{uid}'
+        session['room'] = uid
+    else:
+        copy_url = f'Вы Вы зашли повторно.'
+    print('LOG game_tree().....')
     print(session)
-    return render_template("game_tree.html")
+    return render_template("game_tree.html", text=copy_url, room=json.dumps(uid))
+
+
+
+@app.route('/game_three/<room>')
+def game_tree_come(room):
+    session.permanent = True
+    if 'uid' not in session:
+        session['uid'] = nardy.new_gamer()
+    uid = session['uid']
+    err = nardy.add_in_room(room, uid)
+    if err:
+        copy_url = f'Возникла ошибка: {err}'
+        session['room'] = 'undefined'
+    else:
+        copy_url = f'Вы зашли по приглашению друга.'
+        session['room'] = room
+    print('LOG ame_tree_come(room)...')
+    print(session)
+    print('room='+str(room))
+    return render_template("game_tree.html", text=copy_url, room=json.dumps(room))
 
 
 @app.route('/posts')
@@ -141,31 +168,25 @@ def handle_my_custom_event(json):
 
 @socketio.on('nardy_stage')
 def handle_my_custom_event(json):
-    print(session)
-    if session['uid'] < 102:
-        emit('server_response', nardy.event(session, json), include_self=False, to='testroom')
-    else:
-        emit('server_busy', json)
+    room = session['room']
+    print('LOG handle_my_custom_event(json)...' + str(room))
+    emit('server_response', nardy.event(session, json), include_self=False, to=room)
 
 
 @socketio.on('join')
 def on_join(data):
+    print('LOG on_join...')
+    print('data='+str(data))
     room = data['room']
     join_room(room)
-    print(str(session['uid']) + ' has entered the room. ' + room)
-    json = {'stage_mode': 'connect'}
-    if session['uid'] > 101:
-        emit('server_busy', json)
-    else:
-        emit('server_response', nardy.event(session, json), to='testroom')
-
-
+    msg = {'stage_mode': 'connect'}
+    emit('server_response', nardy.event(session, msg), to=room)
 
 
 if __name__ == '__main__':
     # app.run(debug=True)
     # socketio.run(app, host='0.0.0.0', debug=True)
-    socketio.run(app) #, debug=False)
+    socketio.run(app)  # , debug=False)
     # site = Thread(target=app.run, args=())
     # site.start()
     # game_three_server = Thread(target=server_program, args=())

@@ -22,7 +22,7 @@
         cap: {img_filename: 'cap_100x100.png', frames: {frameWidth: 200, frameHeight: 200}},
         chipW: {img_filename: 'chip_white1.png'},
         chipB: {img_filename: 'chip_black1.png'},
-        dir_assets: 'static/assets/nardy/img/'
+        dir_assets: '../static/assets/nardy/img/'
     }
 
     //Конфигурация игры
@@ -105,6 +105,8 @@
         game_self = this;
         this.stage_mode = 'begin';
         stageControl(this);
+
+        console.log('<create> game_room='+game_room);
 	}
 
 	function update(){
@@ -247,7 +249,7 @@
                     }
                     break;
                 case 'priority':
-                    if(game_self.stage_mode == 'priority_waiting'){
+                    if(game_self.stage_mode == 'priority_waiting' || game_self.stage_mode == 'connect'){
                         game_self.stage_mode = 'priority'
                         activateCapP(game_self, true);
                     }
@@ -332,7 +334,9 @@
 //----------------------------------------------------------------------------------------------------------------------
     //ОТПРАВКА СООБЩЕНИЯ СЕРВЕРУ (ПЕРЕМЕННАЯ socket И ФУНКЦИИ ОПРЕДЕЛЕНЫ В ФАЙЛЕ 'websocket.js')
     function sendServerMessage(self){
-        if(self.stage_mode == 'connect'){socket.emit('join', {room: 'testroom'});}
+        if(self.stage_mode == 'connect'){
+            if(game_room != 'undefined') socket.emit('join', {room: game_room});
+        }
         else{
             //состояние игры (позиции фишек игрока и т.д)...
             let chipsW = [];
